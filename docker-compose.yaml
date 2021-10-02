@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: ./app/Dockerfile
+    image: app
+    restart: always
+    container_name: app
+    expose: 
+      - 8000
+    volumes:
+      - static:/app/static_files
+    command: python manage.py runserver 0.0.0.0:8000
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager
+    ports:
+      - 80:80
+      - 81:81
+      - 443:433
+    environment:
+      DB_MYSQL_HOST: "nginx-proxy-manager-db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "admin"
+      DB_MYSQL_PASSWORD: "admin"
+      DB_MYSQL_NAME: "admin"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+      - static:/app/static_files
+    links:
+      - app
+  
+  nginx-proxy-manager-db:
+    image: jc21/mariadb-aria:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: "admin"
+      MYSQL_DATABASE: "admin"
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: "admin"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+
+volumes:
+  static:
